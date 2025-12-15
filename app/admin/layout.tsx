@@ -13,35 +13,54 @@ export default function AdminLayout({
 }) {
   const router = useRouter()
   const [user, setUser] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true) // More explicit loading state
 
   useEffect(() => {
+    // Subscribe to auth state changes
     const unsubscribe = auth.onAuthStateChanged((currentUser) => {
+      console.log('Auth State Changed:', currentUser?.email); // ADD THIS FOR DEBUGGING
       setUser(currentUser)
-      setLoading(false)
+      setIsLoading(false)
       
       // Only allow YOUR email (aymanalarousy@gmail.com)
-      if (!currentUser || currentUser.email !== 'aymanalarousy@gmail.com') {
-        router.push('/')
+      // Check AFTER loading is complete
+      if (!currentUser) {
+        console.log('No user, redirecting to home');
+        router.push('/');
+        return;
       }
-    })
+      
+      if (currentUser.email !== 'aymanalarousy@gmail.com') {
+        console.log('Wrong email, redirecting. Email was:', currentUser.email);
+        router.push('/');
+        return;
+      }
+      // If email is correct, page will render children
+    });
     
-    return () => unsubscribe()
-  }, [router])
+    // Cleanup subscription
+    return () => unsubscribe();
+  }, [router]);
 
-  if (loading) {
+  // Show a clear loading indicator
+  if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-        <p className="mt-4 text-gray-600">Checking admin access...</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Checking admin permissions...</p>
+          <p className="text-sm text-gray-400 mt-2">(Authenticated as: {user?.email || 'Not signed in'})</p>
+        </div>
       </div>
-    )
+    );
   }
 
+  // If not loading but user is null (should have redirected), show nothing
   if (!user) {
-    return null // Will redirect
+    return null;
   }
 
+  // At this point, user is authenticated with the correct email
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Admin Header */}
